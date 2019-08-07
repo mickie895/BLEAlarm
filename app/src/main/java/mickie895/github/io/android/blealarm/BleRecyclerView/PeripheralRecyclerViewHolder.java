@@ -9,18 +9,26 @@ import mickie895.github.io.android.blealarm.R;
 
 public class PeripheralRecyclerViewHolder extends RecyclerView.ViewHolder {
 
-    public TextView nameView;
-    public TextView addressView;
+    private TextView nameView;
+    private TextView addressView;
+    private TextView rssiView;
 
-    public PeripheralRecyclerViewHolder(@NonNull View itemView) {
+    PeripheralRecyclerViewHolder(@NonNull View itemView) {
         super(itemView);
-        nameView = (TextView)itemView.findViewById(R.id.PeripheralName);
-        addressView = (TextView)itemView.findViewById(R.id.PeripheralAdress);
+        nameView = itemView.findViewById(R.id.PeripheralName);
+        addressView = itemView.findViewById(R.id.PeripheralAdress);
+        rssiView = itemView.findViewById(R.id.PeripheralRssi);
     }
 
     public void SetTexts(String name,String address){
         nameView.setText(name);
         addressView.setText(address);
+    }
+
+    void SetTexts(String name, String address, String rssi) {
+        nameView.setText(name);
+        addressView.setText(address);
+        rssiView.setText(rssi);
     }
 
 }

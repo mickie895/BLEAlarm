@@ -1,5 +1,6 @@
 package mickie895.github.io.android.blealarm.BleRecyclerView;
 
+import android.bluetooth.BluetoothDevice;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -13,38 +14,58 @@ import mickie895.github.io.android.blealarm.R;
 
 public class PeripheralRecyclerViewAdapter extends RecyclerView.Adapter {
 
-    public void setPeripheralList(List<BlePeripheral> peripheralList) {
-        PeripheralList = peripheralList;
+    private ArrayList<BluetoothDevice> mDevices;
+    private ArrayList<byte[]> mRecords;
+    private ArrayList<Integer> mRSSIs;
+
+
+    public void addDevice(BluetoothDevice device, int rssi, byte[] scanRecord) {
+        if(!mDevices.contains(device)) {
+            mDevices.add(device);
+            mRSSIs.add(rssi);
+            mRecords.add(scanRecord);
+        }
+        notifyDataSetChanged();
     }
 
-    private List<BlePeripheral> PeripheralList;
+    public BluetoothDevice getDevice(int index) {
+        return mDevices.get(index);
+    }
 
-    public PeripheralRecyclerViewAdapter(List<BlePeripheral> peripheralList) {
-        PeripheralList = peripheralList;
+    public int getRssi(int index) {
+        return mRSSIs.get(index);
     }
 
     public PeripheralRecyclerViewAdapter() {
-        PeripheralList = new ArrayList<BlePeripheral>();
+        mDevices  = new ArrayList<>();
+        mRecords = new ArrayList<>();
+        mRSSIs = new ArrayList<>();
+
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
         View inflate = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.peripheral_state, viewGroup, false);
-        PeripheralRecyclerViewHolder vh = new PeripheralRecyclerViewHolder(inflate);
-        return vh;
+        return new PeripheralRecyclerViewHolder(inflate);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
         if (viewHolder instanceof PeripheralRecyclerViewHolder){
-            BlePeripheral ble = PeripheralList.get(i);
-            ((PeripheralRecyclerViewHolder)viewHolder).SetTexts(ble.getName(),ble.getAddress());
+            BluetoothDevice device = mDevices.get(i);
+            int rssi = mRSSIs.get(i);
+            String rssiString = (rssi == 0) ? "N/A" : rssi + " db";
+            String name = device.getName();
+            String address = device.getAddress();
+            if(name == null || name.length() <= 0) name = "Unknown Device";
+
+            ((PeripheralRecyclerViewHolder)viewHolder).SetTexts(name,address,rssiString);
         }
     }
 
     @Override
     public int getItemCount() {
-        return PeripheralList.size();
+        return mDevices.size();
     }
 }

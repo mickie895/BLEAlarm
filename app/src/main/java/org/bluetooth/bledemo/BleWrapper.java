@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -21,7 +22,10 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 public class BleWrapper {
@@ -29,12 +33,12 @@ public class BleWrapper {
     private static final int RSSI_UPDATE_TIME_INTERVAL = 1500; // 1.5 seconds
 
     /* callback object through which we are returning results to the caller */
-    private BleWrapperUiCallbacks mUiCallback = null;
+    private BleWrapperUiCallbacks mUiCallback;
     /* define NULL object for UI callbacks */
     private static final BleWrapperUiCallbacks NULL_CALLBACK = new BleWrapperUiCallbacks.Null(); 
     
     /* creates BleWrapper object, set its parent activity and callback object */
-    public BleWrapper(Activity parent, BleWrapperUiCallbacks callback) {
+    public BleWrapper(Context parent, BleWrapperUiCallbacks callback) {
     	this.mParent = parent;
     	mUiCallback = callback;
     	if(mUiCallback == null) mUiCallback = NULL_CALLBACK;
@@ -59,8 +63,7 @@ public class BleWrapper {
 		if(adapter == null) return false;
 		
 		// and then check if BT LE is also available
-		boolean hasBle = mParent.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
-		return hasBle;
+		return mParent.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
 	}    
 
 	
@@ -76,7 +79,8 @@ public class BleWrapper {
 		
 		return adapter.isEnabled();
 	}
-	
+
+
 	/* start scanning for BT LE devices around */
 	public void startScanning() {
         ScanSettings.Builder builder = new ScanSettings.Builder();
@@ -98,10 +102,7 @@ public class BleWrapper {
         }
 
         if(mBluetoothAdapter == null) mBluetoothAdapter = mBluetoothManager.getAdapter();
-        if (mBluetoothAdapter == null) {
-            return false;
-        }
-        return true;    	
+        return mBluetoothAdapter != null;
     }
 
     /* connect to the device with specified address */
@@ -144,29 +145,29 @@ public class BleWrapper {
     public void readPeriodicalyRssiValue(final boolean repeat) {
     	mTimerEnabled = repeat;
     	// check if we should stop checking RSSI value
-    	if(mConnected == false || mBluetoothGatt == null || mTimerEnabled == false) {
+    	if(!mConnected || mBluetoothGatt == null || !mTimerEnabled) {
     		mTimerEnabled = false;
     		return;
     	}
-    	
+
     	mTimerHandler.postDelayed(new Runnable() {
 			@Override
 			public void run() {
 				if(mBluetoothGatt == null ||
 				   mBluetoothAdapter == null ||
-				   mConnected == false)
+                        !mConnected)
 				{
 					mTimerEnabled = false;
 					return;
 				}
-				
+
 				// request RSSI value
 				mBluetoothGatt.readRemoteRssi();
 				// add call it once more in the future
 				readPeriodicalyRssiValue(mTimerEnabled);
 			}
     	}, RSSI_UPDATE_TIME_INTERVAL);
-    }    
+    }
     
     /* starts monitoring RSSI value */
     public void startMonitoringRssiValue() {
@@ -197,7 +198,7 @@ public class BleWrapper {
     /* get all characteristic for particular service and pass them to the UI callback */
     public void getCharacteristicsForService(final BluetoothGattService service) {
     	if(service == null) return;
-    	List<BluetoothGattCharacteristic> chars = null;
+    	List<BluetoothGattCharacteristic> chars;
     	
     	chars = service.getCharacteristics();   	
     	mUiCallback.uiCharacteristicForService(mBluetoothGatt, mBluetoothDevice, service, chars);
@@ -262,8 +263,7 @@ public class BleWrapper {
         else {
         	// not known type of characteristic, so we need to handle this in "general" way
         	// get first four bytes and transform it to integer
-        	intValue = 0;
-        	if(rawValue.length > 0) intValue = (int)rawValue[0];
+            if(rawValue.length > 0) intValue = (int)rawValue[0];
         	if(rawValue.length > 1) intValue = intValue + ((int)rawValue[1] << 8); 
         	if(rawValue.length > 2) intValue = intValue + ((int)rawValue[2] << 8); 
         	if(rawValue.length > 3) intValue = intValue + ((int)rawValue[3] << 8); 
@@ -433,7 +433,7 @@ public class BleWrapper {
         	else {
         		 mUiCallback.uiFailedWrite(mBluetoothGatt, mBluetoothDevice, mBluetoothSelectedService, characteristic, description + " STATUS = " + status);
         	}
-        };
+        }
         
         @Override
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
@@ -441,10 +441,10 @@ public class BleWrapper {
         		// we got new value of RSSI of the connection, pass it to the UI
         		 mUiCallback.uiNewRssiAvailable(mBluetoothGatt, mBluetoothDevice, rssi);
         	}
-        };
+        }
     };
     
-	private Activity mParent = null;    
+	private Context mParent;
 	private boolean mConnected = false;
 	private String mDeviceAddress = "";
 

@@ -10,7 +10,7 @@ import android.widget.Toast;
 
 import mickie895.github.io.android.blealarm.Fragments.PeripheralFragment;
 
-public class MainActivity extends AppCompatActivity implements PeripheralFragment.OnFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity {
 
     private PeripheralFragment pFragment;
 
@@ -37,14 +37,10 @@ public class MainActivity extends AppCompatActivity implements PeripheralFragmen
         setContentView(R.layout.activity_main);
         getSupportFragmentManager().
                 beginTransaction()
-                .add(R.id.fragment, PeripheralFragment.newInstance("test1","test2"))
+                .add(R.id.fragment, PeripheralFragment.newInstance())
                 .commit();
         BottomNavigationView navView = findViewById(R.id.nav_view);
         navView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
     }
 
-    @Override
-    public void onFragmentInteraction(Uri uri) {
-
-    }
 }
